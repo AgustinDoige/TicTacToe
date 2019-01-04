@@ -1,22 +1,22 @@
 """
-0 generally represents a unfinished game
-1 generally represents the Human Player.
-2 generally represents the Bot Player
+0 generally represents an unfinished game
+1 generally represents the Human Player, either a human move or a game won by the human.
+2 generally represents the Bot Player, either a bot move or a game won by the human
 3 generally represents a Draw
 """
 class Board:
-	# placements is a list of lists that holds the matrix of the board. The matrix goes through the columns down instead of rows right
 	def __init__(self,placements,shape,player):
+		# Placements is a list of lists that holds the matrix of the board. The matrix goes through the columns down instead of rows right
 		self.placements = placements
 		self.currentShape = shape    # 'cross' OR 'circle'
-		self.currentPlayer = player  # 1 OR 2 - It means the player who's turn is now.
-		self.state = self.getState()
+		self.currentPlayer = player  # 1 OR 2 - It means the player who's turn is next.
+		self.state = self.getState() # 1 = Human wins, 2 = Bot wins, 3 = Draw, 0 = Unfinished Game
 
 	def cloneBoard(self):
 		return Board(deepcopy(self.placements),deepcopy(self.currentShape),deepcopy(self.currentPlayer))
 
 	def getState(self):
-		# 	return 0 == UNFINISHED GAME // return 1 == HUMAN WINS  //  return 2 == BOT WINS // return 3 == DRAW
+		# return 0 == UNFINISHED GAME // return 1 == HUMAN WINS  //  return 2 == BOT WINS // return 3 == DRAW
 		plc = self.placements
 		setList = []
 		#First it checks the Diagonals.
@@ -25,16 +25,15 @@ class Board:
 		#Then it checks the columns
 		for i in range(0,3):
 			setList.append(set(plc[i]))
-		#Then it chekcs the rows
+		#Then it checks the rows
 		for i in range(0,3):
 			setList.append(set((plc[0][i],plc[1][i],plc[2][i])))
 		#This checks the setList
-		# print(setList)
 		for st in setList:
 			if len(st) == 1:
 				if 0 not in st:
 					return list(st)[0]
-		#Now that has made sure neither 1 nor 2 have won, it needs to see if the board is a Draw (3) or Unfinished (0)
+		# Now that has made sure neither 1 nor 2 have won, it needs to see if the board is a Draw (3) or Unfinished (0)
 		for l in plc:
 			for it in l:
 				if it == 0:
@@ -42,10 +41,9 @@ class Board:
 		return 3
 
 	def value(self):
-		# print("Called value about",self.placements)
-		# Gives the value of the current Board. If the board is not finished, it will make every play making a tree with
-		# the best choices for each player and then it will gather the value of this board
-		# Degenerate case
+		# Gives the effective value of the current Board, meaning if both players play perfectly, how the game will end.
+
+		# Degenerative case:
 		s = self.getState()
 		if s != 0:
 			return s # 1 == HUMAN WINS // 2 == BOT WINS // 3 == DRAW
@@ -54,18 +52,31 @@ class Board:
 		for in1 in range(0,3):
 			for in2 in range(0,3):
 				if not self.occupied(in1,in2):
-					subVal = self.makeMove(in1,in2).value() #Value of making the move (in1,in2)
+					subVal = self.makeMove(in1,in2).value() # Value of making the move (in1,in2)
 					if subVal == self.currentPlayer:
 						# If there's a move that leads to victory, the value of that board is propagated to this one
 						# because we can predict that the player will make that move
 						return subVal
-					optionSet.add(subVal) #It adds other values that aren't victories
+					optionSet.add(subVal) # It adds other values that aren't victories
 		if 3 in optionSet:
 			# If it can't find a victory, the optimal solution is a Draw, so we propagate that result
 			return 3
 		else:
 			# It gets to this option when all the options of moves can't lead to a victory for CurrentPlayer, nor a Draw
 			return self.opponent()
+
+	def suValue(self):
+		# suValue is a function that tries to differentiate options even further by adding a value if a specific move has more potential solutions
+		# So the bot will not only chose one optimal solution, but also the solution that gives even more chances to the player to make a mistake
+		s = self.getState()
+		if s != 0:
+			return 1
+		v = 0
+		for in1 in range(0,3):
+			for in2 in range(0,3):
+				if not self.occupied(in1,in2):
+					v += 1/self.makeMove(in1,in2).suValue() + 1
+		return v
 
 	def occupied(self,i1,i2):
 		# From (0,0) to (2,2)
@@ -100,7 +111,6 @@ class Board:
 		# Draws move on window and returns a CLONE of board with move (i1,i2) made
 		# i1 and i2 have to range from 0 to 2
 		drawShape(window=window,position=(i1,i2),shape=self.currentShape)
-		# print("Drawing a",self.currentShape,"in",i1,i2,)
 		return self.makeMove(i1,i2)
 
 	def drawEntireBoard(self,window):
@@ -150,7 +160,7 @@ class Button:
 		self.text.undraw()
 
 def isPointInRectangle(point,rectangle):
-	# Takes objects Point and checks if their coordenades are in rectangle. Rectangle is NOT an object, but a tuple with 2 tuples that each have the
+	# Takes objects Point and checks if their coordenades are in rectangle. rectangle is NOT a Rectangle Object, but a tuple with 2 tuples that each have the
 	# x and y coord of the extreme points of the rectangle, like the way Graphics.py constructs rectangles
 	xCoord = point.x
 	yCoord = point.y
@@ -176,14 +186,14 @@ def drawShape(window,position,shape):
 	yPoint = int(ySide/2) + (ySide * (position[1]))
 
 	if shape == 'circle':
-		c = Circle(Point(xPoint,yPoint),int(min(window.width,window.height)/smallRatio))
+		c = Circle(Point(xPoint,yPoint),int(min(w,h)/smallRatio))
 		c.setOutline(color_rgb(200,30,30))
 		c.setWidth(6)
 		c.draw(window)
 		drawnShapes.append(c)
 
 	elif shape == 'cross':
-		d = int(min(window.width,window.height)/smallRatio)
+		d = int(min(w,h)/smallRatio)
 		line1 = Line(Point(xPoint-d,yPoint-d),Point(xPoint+d,yPoint+d))
 		line2 = Line(Point(xPoint-d,yPoint+d),Point(xPoint+d,yPoint-d))
 		line1.setOutline(color_rgb(30,30,200))
@@ -200,8 +210,7 @@ def drawShape(window,position,shape):
 			sleep(60)
 
 def playerMove(window,board):
-	# Takes a board when it is its turn and changes it with the player move
-	# print(board,type(board))
+	# Takes a board when it is its turn, draws the move and returns a board with the move made
 	while True:
 		clickPoint = window.getMouse()
 		for i in range(0,3):
@@ -212,7 +221,22 @@ def playerMove(window,board):
 						return board.drawMove(i,j,window)
 
 def botMove(window,board):
-	# sleep(0.5)
+	"""
+	optionsDictionary : it saves the board value of every avaliable choice
+	bestOptions       : a list that stores al the seemingly equally good choices. 
+	                    So if only 3 choices from the optionsDictionary lead to a win, this will store those 3 choices
+	weightVal         : Dictionary that stores the results of calling the subVal function on a choice
+	finalOptions      : Finally, these will hold all the options that are in bestOptions while at the same time
+						have the lowest and same weightVal
+	chosenBox         : a random selection of 1 option chosen from finalOptions
+	"""
+	sleep(0.5)
+	if board.placements == [[0,0,0],[0,0,0],[0,0,0]]:
+		# The first calculation if the bot starts is very long, and it always concludes that it has to chose
+		# the middle box. This is a cache to skip that calculation
+		sleep(0.1)
+		return board.drawMove(1,1,window) 
+
 	optionsDictionary = {} 
 	for in1 in range(0,3):
 		for in2 in range(0,3):
@@ -228,11 +252,21 @@ def botMove(window,board):
 		for key in optionsDictionary.keys():
 			if optionsDictionary[key] == 3:
 				bestOptions.append(key)
-
 	else:
 		bestOptions = deepcopy(list(optionsDictionary.keys()))
 
-	chosenBox = choice(bestOptions)
+	weightVal = {}
+	for move in bestOptions:
+		weightVal[move] = board.makeMove(move[0],move[1]).suValue()
+
+	finalOptions = []
+	minWeight = min(weightVal.values())
+	for move in bestOptions:
+		suV = weightVal[move]
+		if suV == minWeight:
+			finalOptions.append((move[0],move[1]))
+
+	chosenBox = choice(finalOptions)
 	return board.drawMove(chosenBox[0],chosenBox[1],window) 
 
 def drawBackground(window):
@@ -430,7 +464,6 @@ def game(win):
 				break
 			b = playerMove(win,b)
 		winTitle(win,b.state)
-	# print(drawnShapes)
 
 def main():
 	win = GraphWin("TATETI",501,501)
@@ -443,8 +476,8 @@ def main():
 	global ySide
 	ySide = int(h/3)
 	global drawnShapes
-	drawnShapes = []
-
+	drawnShapes = [] # Every new shape that will not immediatly be undrawn has to be added to this list so the cleanScreen() can work
+	
 	menu(win)
 	while True:
 		des = backLoop(win)
