@@ -42,8 +42,6 @@ class Board:
 				j+=1
 			i += 1
 
-
-
 class Button:
 	def __init__(self,window,text,relativeCoord,size):
 		# Relative Coord is the relative position if the screen would be a 50x50 pixel window
@@ -160,46 +158,51 @@ def boardValue(placements,turn=2):
 	state = hasEnded(placements) # 1 = Human Wins, 2 = Bot wins, 3 = Draw, 0 = Non Finished
 	if state != 0:
 		if state == 1:
-			return -1
+			return (-1,True)
 			# global humanWins
 			# humanWins += 1
 		if state == 2:
 			# global botWins
 			# botWins  += 1
-			return 1
+			return (1,True)
 		elif state == 3:
 			# global draws
 			# draws += 1
-			return 0
+			return (0,True)
 		else:
 			print("Error! with boardValue()",placements,turn)
 
-	if turn == 2:
-		mx = -2
+	if turn == 2: #BotTurn
+		mx = -1
 		for in1 in range(0,3):
 			for in2 in range(0,3):
 				if placements[in1][in2] == 0:
 					plCopy = deepcopy(placements)
 					plCopy[in1][in2] = 2
-					val = boardValue(plCopy,1)
+					val = boardValue(plCopy,1)[0]
 					if val > mx:
 						mx = deepcopy(val)
-		# print(placements,mx)	
-		return mx
+						if mx == 1:
+							return (mx,False)
 
-	elif turn == 1:
-		mn = 2
+		# print(placements,mx)	
+		return (mx,False)
+
+	elif turn == 1: #HumanTurn
+		mn = 1
 		for in1 in range(0,3):
 			for in2 in range(0,3):
 				if placements[in1][in2] == 0:
 					plCopy = deepcopy(placements)
 					plCopy[in1][in2] = 1
-					val = boardValue(plCopy,2)
+					val = boardValue(plCopy,1)[0]
 					if val < mn:
 						mn = deepcopy(val)
+						if mn == -1:
+							return (mn,False)
 
 		# print(placements,mn)
-		return mn
+		return (mn,False)
 
 	else:
 		print("Problem:",placements,turn)
@@ -207,14 +210,19 @@ def boardValue(placements,turn=2):
 def botMove(board):
 	plc = board.placements
 
+	mx = -1
 	moveDic = {}
 	for in1 in range(0,3):
 		for in2 in range(0,3):
 			if plc[in1][in2] == 0:
 				cpyplc = deepcopy(plc)
 				cpyplc[in1][in2] = 2
-				moveDic[(in1,in2)] = boardValue(cpyplc,1)
-	mx = max(moveDic.values())
+				boardVal = boardValue(cpyplc,1)
+				if boardVal[1]:
+					board.nextTurn(in1,in2)
+				if boardVal[0] > mx:
+					mx = boardVal[0]
+				moveDic[(in1,in2)] = boardVal[0]
 	options = []
 	for key in moveDic.keys():
 		if moveDic[key] == mx:
@@ -334,10 +342,10 @@ def launchScreen(window):
 			break
 
 def testA():
-	# print(boardValue([[1,0,1],[0,1,2],[2,0,2]],1))
-	# print(boardValue([[1,1,1],[0,1,2],[2,0,2]],2))
-	# print(boardValue([[0,0,2],[0,1,0],[0,0,0]],1))
-	# print(boardValue([[2,0,0],[0,1,0],[0,0,0]],1))
+	# print(boardValue([[1,0,1],[0,1,2],[2,0,2]],1)[0])
+	# print(boardValue([[1,1,1],[0,1,2],[2,0,2]],2)[0])
+	# print(boardValue([[0,0,2],[0,1,0],[0,0,0]],1)[0])
+	# print(boardValue([[2,0,0],[0,1,0],[0,0,0]],1)[0])
 
 
 	global botWins
@@ -432,9 +440,9 @@ from time import sleep
 from copy import deepcopy
 from copy import copy
 from graphics import *
-# main()
+main()
 # testA()
-testB()
+# testB()
 
 
 ###
