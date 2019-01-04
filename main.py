@@ -253,12 +253,12 @@ def drawBackground(window):
 
 def launchScreen(window):
 	window.setBackground(color_rgb(10,10,70))
-	text = Text(Point(int(w/2),int(h/5)),"Ta Te Ti")
+	text = Text(Point(int(w/2),int(h/5)),"Tic Tac Toe")
 	text.setTextColor(color_rgb(230,230,80))
 	text.setSize(25)
 	text.setFace('helvetica')
 	text.draw(window)
-	text2 = Text(Point(int(w/2),int(h*1.5/5)),"Agustin Dominguez")
+	text2 = Text(Point(int(w/2),int(h*1.5/5)),"by A. Doige")
 	text2.setTextColor(color_rgb(230,230,80))
 	text2.setSize(10)
 	text2.setFace('helvetica')
